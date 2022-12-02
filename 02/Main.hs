@@ -2,35 +2,72 @@ module Main
        ( main )
        where
 
-mkTupleUnsafe :: [[a]] -> (a, a)
-mkTupleUnsafe [[x], [y]] = (x, y)
+data Shape = Rock | Paper | Scissors
+  deriving Show
+
+losesTo :: Shape -> Shape
+losesTo Rock     = Scissors
+losesTo Paper    = Rock
+losesTo Scissors = Paper
+
+winsTo :: Shape -> Shape
+winsTo Rock     = Paper
+winsTo Paper    = Scissors
+winsTo Scissors = Rock
+
+mkShape :: Char -> Maybe Shape
+mkShape c = case c of
+              'A' -> Just Rock
+              'B' -> Just Paper
+              'C' -> Just Scissors
+              _   -> Nothing
+
+matchPlay :: Shape -> Char -> Shape
+matchPlay _ c = case c of
+                  'X' -> Rock
+                  'Y' -> Paper
+                  'Z' -> Scissors
+
+matchOutcome :: Shape -> Char -> Shape
+matchOutcome shape targetResult =
+  case targetResult of
+    'X' -> losesTo shape
+    'Y' -> shape
+    'Z' -> winsTo shape
+
+mkTupleUnsafe :: [[Char]] -> Maybe (Shape, Char)
+mkTupleUnsafe [[x], [y]] =
+  case mkShape x of
+    Just shape -> Just (shape, y)
+    Nothing    -> Nothing
 mkTupleUnsafe _ = error "now ye done it"
 
-shapeScore :: (Num a) => Char -> a
-shapeScore a =
-  case a of
-    'A' -> 1
-    'X' -> 1
-    'B' -> 2
-    'Y' -> 2
-    'C' -> 3
-    'Z' -> 3
-    
 wrap :: (Num a, Ord a) => a -> a
 wrap x
-  | x > 3 = 1
+  | x > 3     = 1
   | otherwise = x
 
-scoreGame :: (Eq a, Num a, Ord a) => Char -> Char -> (a, a)
-scoreGame a b
-  | shapeA == shapeB = (3 + shapeA, 3 + shapeB)
-  | wrap (shapeA + 1) == shapeB = (0 + shapeA, 6 + shapeB)
-  | otherwise = (6 + shapeA, shapeB)
-  where shapeA = shapeScore a
-        shapeB = shapeScore b
+score :: (Num a) => Shape -> a
+score shape =
+  case shape of
+    Rock     -> 1
+    Paper    -> 2
+    Scissors -> 3
+
+scoreGame :: (Eq a, Num a, Ord a) => (Shape -> Char -> Shape) -> Shape -> Char -> a
+scoreGame decider a b
+  | shapeA == shapeB = 3 + shapeB
+  | wrap (shapeA + 1) == shapeB = 6 + shapeB
+  | otherwise = shapeB
+  where shapeA = score a
+        shapeB = score $ decider a b
 
 main :: IO ()
 main = do
   content <- readFile "input.txt"
-  let games = map (mkTupleUnsafe . words) $ lines content
-  print $ sum $ map (snd . uncurry scoreGame) games
+  let games = mapM (mkTupleUnsafe . words) $ lines content
+  case games of
+    Nothing -> putStrLn "Hello, your input is invalid. Goodbye."
+    Just games' -> do
+      print $ sum $ map (uncurry $ scoreGame matchPlay) games'
+      print $ sum $ map (uncurry $ scoreGame matchOutcome) games'
