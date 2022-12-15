@@ -33,12 +33,12 @@ if __name__ == "__main__":
     while (500, 0) not in blocked:
         pos = SAND_POINT
         while pos[1] < (1 + height):
-            if (pos[0], pos[1] + 1) not in blocked:
-                pos = (pos[0], pos[1] + 1)
-            elif (pos[0] - 1, pos[1] + 1) not in blocked:
-                pos = (pos[0] - 1, pos[1] + 1)
-            elif (pos[0] + 1, pos[1] + 1) not in blocked:
-                pos = (pos[0] + 1, pos[1] + 1)
+            if (next_pos := (pos[0], pos[1] + 1)) not in blocked:
+                pos = next_pos
+            elif (next_pos := (pos[0] - 1, pos[1] + 1)) not in blocked:
+                pos = next_pos
+            elif (next_pos := (pos[0] + 1, pos[1] + 1)) not in blocked:
+                pos = next_pos
             else:
                 blocked.add(pos)
                 break
