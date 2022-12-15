@@ -13,7 +13,6 @@ if __name__ == "__main__":
     coords = [[[int(c) for c in coord.split(",")] for coord in line.split("->")] for line in contents]
 
     height = max(pair[1] for pair in more_itertools.flatten(coords))
-    width = max(pair[0] for pair in more_itertools.flatten(coords))
 
     blocked = set()
     for rock_line in coords:
@@ -30,20 +29,20 @@ if __name__ == "__main__":
 
     count = 0
     part_one_complete = False
-    while (500, 0) not in blocked:
-        pos = SAND_POINT
-        while pos[1] < (1 + height):
-            if (next_pos := (pos[0], pos[1] + 1)) not in blocked:
-                pos = next_pos
-            elif (next_pos := (pos[0] - 1, pos[1] + 1)) not in blocked:
-                pos = next_pos
-            elif (next_pos := (pos[0] + 1, pos[1] + 1)) not in blocked:
-                pos = next_pos
+    while SAND_POINT not in blocked:
+        x, y = SAND_POINT
+        while y < (1 + height):
+            if (next_pos := (x, y + 1)) not in blocked:
+                x, y = next_pos
+            elif (next_pos := (x - 1, y + 1)) not in blocked:
+                x, y = next_pos
+            elif (next_pos := (x + 1, y + 1)) not in blocked:
+                x, y = next_pos
             else:
-                blocked.add(pos)
+                blocked.add((x, y))
                 break
         else:
-            blocked.add(pos)
+            blocked.add((x, y))
 
             if not part_one_complete:
                 print(count)
