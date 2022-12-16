@@ -32,7 +32,7 @@ struct State
     std::vector<int> visited{};
     int flow{0};
     int acc{0};
-    int minutes_left{30};
+    int minutes_left{26};
 };
 
 class DistTree
@@ -79,27 +79,39 @@ Valve parse_valve(std::istream& is)
     return v;
 }
 
-
 int find_max_pressure_release(const std::map<int, Valve>& valves,
         const DistTree& dist_tree, const Valve& start,
         const State state)
 {
+    static bool player_2 = false;
     if (state.minutes_left <= 0) {
-        return state.acc;
+        if (player_2) {
+            return state.acc;
+        }
+
+        const auto start_valve = valves.at(start_id);
+        State new_state{
+            state.visited,
+            0,
+            0,
+            26};
+        player_2 = true;
+        const auto best_release_second =
+            find_max_pressure_release(valves, dist_tree, start_valve, new_state);
+        player_2 = false;
+
+        return state.acc + best_release_second;
     }
 
     int best_pressure_release = -1;
     for (const auto&[to_id, to_valve]: valves) {
         if (assert(to_valve.flow >= 0); to_valve.flow == 0) {
-            //std::cout << "FAILED: " << start.id << ' ' << to_id << '\n';
             continue;
         } else if (std::find(
                 state.visited.begin(), state.visited.end(), to_id)
                 != state.visited.end()) {
             continue;
         }
-
-        //std::cout << start.id << ' ' << to_id << '\n';
 
         const auto minutes_elapsed_walking =
             dist_tree.get_distance(start.id, to_id);
@@ -113,12 +125,11 @@ int find_max_pressure_release(const std::map<int, Valve>& valves,
                 * state.flow,
             state.minutes_left - minutes_elapsed_walking - 1};
         new_state.visited.push_back(to_id);
-        //std::cout << "FLOW: " << new_state.flow << ' ' << new_state.acc << ' ' << new_state.minutes_left << '\n';
+
         if (auto pressure_release =
                 find_max_pressure_release(
                     valves, dist_tree, to_valve, new_state);
                 pressure_release > best_pressure_release) {
-            //std::cout << "PRESSURE: " << pressure_release << '\n';
             best_pressure_release = pressure_release;
         }
     }
