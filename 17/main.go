@@ -8,8 +8,11 @@ import (
 )
 
 type Point struct {
-	x int
-	y int
+	x, y int
+}
+
+type State struct {
+	i, j int
 }
 
 var shapes = [][]Point{
@@ -37,12 +40,31 @@ func main() {
 	}
 }
 
-func simulate(airStream string) int {
+func simulate(airStream string) int64 {
 	airStreamLength := len(airStream)
 	filled := make(map[Point]bool)
+	seen := make(map[State]int)
+	seenAt := make(map[State]int)
+	iters := make(map[State]int64)
 	base := 0
+	skipped := int64(0)
 	j := 0
-	for i := 0; i < 2022; i++ {
+	for i := int64(0); i < 1000000000000; i++ {
+		state := State{int(i % 5), j % airStreamLength}
+		seen[state]++
+
+		if seen[state] > 100 && skipped == 0 {
+			height := int64(base - seenAt[state])
+			cycles := i - iters[state]
+			remaining := 1000000000000 - i
+			nc := remaining/cycles - 1
+			i += nc * cycles
+			skipped = nc * height
+		}
+
+		seenAt[state] = base
+		iters[state] = i
+
 		x, y := 2, base+3
 		stopped := false
 		for ; !stopped; j++ {
@@ -74,10 +96,14 @@ func simulate(airStream string) int {
 				x = testx
 			}
 
-			for _, point := range shapes[i%5] {
-				if y == 0 || filled[Point{x + point.x, y + point.y - 1}] {
-					stopped = true
-					break
+			if y == 0 {
+				stopped = true
+			} else {
+				for _, point := range shapes[i%5] {
+					if filled[Point{x + point.x, y + point.y - 1}] {
+						stopped = true
+						break
+					}
 				}
 			}
 
@@ -95,7 +121,7 @@ func simulate(airStream string) int {
 		}
 		base = max(base, y+shapeHeight)
 	}
-	return base
+	return int64(base) + skipped
 }
 
 func max(a, b int) int {
