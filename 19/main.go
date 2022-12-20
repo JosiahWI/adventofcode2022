@@ -43,13 +43,13 @@ func main() {
 		blueprints := parse(f)
 		f.Close()
 		nblueprints := len(blueprints) / blueprintSize
-		sum := 0
+		product := 1
 		for i := 0; i < nblueprints; i++ {
-			quality := (i + 1) * optimize(blueprints[blueprintSize*i:blueprintSize*(i+1)])
-			fmt.Printf("%d\t%d\n", i, quality)
-			sum += quality
+			geodes := optimize(blueprints[blueprintSize*i : blueprintSize*(i+1)])
+			fmt.Printf("%d\t%d\n", i, geodes)
+			product *= geodes
 		}
-		fmt.Printf("%d\n", sum)
+		fmt.Printf("%d\n", product)
 	}
 }
 
@@ -60,10 +60,7 @@ func parse(r io.Reader) []int {
 		fmt.Fprint(os.Stderr, "day 19: no input\n")
 		return []int{}
 	}
-	nblueprints, err := strconv.Atoi(input.Text())
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "day19: reading header: %v\n", err)
-	}
+	nblueprints := 3
 	var blueprints []int
 	for i := 0; i < nblueprints; i++ {
 		for j := 0; j < 4; j++ {
@@ -89,7 +86,7 @@ func parse(r io.Reader) []int {
 
 // Uses DFS to find the optimal number of geodes cracked.
 func optimize(blueprint []int) int {
-	const minutes = 24
+	const minutes = 32
 	maxore := max(blueprint[0],
 		max(blueprint[3], max(blueprint[6], blueprint[9])))
 	maxclay := blueprint[7]
