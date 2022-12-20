@@ -21,7 +21,14 @@ func main() {
 			fmt.Fprintf(os.Stderr, "day19: parsing: %v\n", err)
 			continue
 		}
-		view := mix(numbers)
+
+		view := make([]int, len(numbers))
+		for i, _ := range view {
+			view[i] = i
+		}
+		for i := 0; i < 10; i++ {
+			mix(numbers, view)
+		}
 		i, _ := find(numbers, 0)
 		base, _ := find(view, i)
 		nnumbers := len(view)
@@ -32,11 +39,7 @@ func main() {
 	}
 }
 
-func mix(numbers []int) []int {
-	view := make([]int, len(numbers))
-	for i, _ := range view {
-		view[i] = i
-	}
+func mix(numbers []int, view []int) {
 	for i, n := range numbers {
 		j, ok := find(view, i)
 		if !ok {
@@ -49,7 +52,6 @@ func mix(numbers []int) []int {
 			show[i] = numbers[j]
 		}
 	}
-	return view
 }
 
 func parse(data []byte) ([]int, error) {
@@ -59,7 +61,7 @@ func parse(data []byte) ([]int, error) {
 		if err != nil {
 			return []int{}, err
 		}
-		numbers = append(numbers, n)
+		numbers = append(numbers, n*811589153)
 	}
 	return numbers, nil
 }
