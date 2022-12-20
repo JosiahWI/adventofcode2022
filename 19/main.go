@@ -3,12 +3,13 @@ package main
 
 import (
 	"bufio"
+	"flag"
 	"fmt"
 	"io"
 	"os"
+	"runtime/pprof"
 	"strconv"
 	"strings"
-	"sync"
 )
 
 const (
@@ -33,8 +34,20 @@ func max(a, b int) int {
 	return b
 }
 
+var cpuprofile = flag.String("cpuprofile", "", "write cpu profile to file")
+var memprofile = flag.String("memprofile", "", "write memory profile to file")
+
 func main() {
-	for _, arg := range os.Args[1:] {
+	flag.Parse()
+	if *cpuprofile != "" {
+		f, err := os.Create(*cpuprofile)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "day 19: %v\n", err)
+		}
+		pprof.StartCPUProfile(f)
+		defer pprof.StopCPUProfile()
+	}
+	for _, arg := range flag.Args() {
 		f, err := os.Open(arg)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "day 19: %v\n", err)
@@ -50,6 +63,15 @@ func main() {
 			product *= geodes
 		}
 		fmt.Printf("%d\n", product)
+		if *memprofile != "" {
+			f, err := os.Create(*memprofile)
+			if err != nil {
+				fmt.Fprintf(os.Stderr, "day19: %v\n", err)
+			}
+			pprof.WriteHeapProfile(f)
+			f.Close()
+			return
+		}
 	}
 }
 
@@ -86,54 +108,36 @@ func parse(r io.Reader) []int {
 
 // Uses DFS to find the optimal number of geodes cracked.
 func optimize(blueprint []int) int {
-	const minutes = 32
+	const minutes = 28
 	maxore := max(blueprint[0],
 		max(blueprint[3], max(blueprint[6], blueprint[9])))
 	maxclay := blueprint[7]
 	maxoby := blueprint[11]
-	ch := make(chan int)
-	var wc sync.WaitGroup
 	var maxn int
-	var dfs func(inv state, count int)
-	dfs = func(inv state, count int) {
+	var dfs func(inv state, count int) int
+	dfs = func(inv state, count int) int {
 		if count > minutes {
-			wc.Done()
-			return
+			return 0
 		}
-		rem := minutes - count
-		if count != minutes && inv.geod+inv.Δgeod*(rem)+rem*(rem-1)/2 > maxn {
+		if rem := minutes - count; inv.geod+inv.Δgeod*(rem)+rem*(rem-1)/2 > maxn && count != minutes {
+			var g0, g1, g2, g3 int
 			if inv.Δoby > 0 {
-				wc.Add(1)
-				go dfs(skip(blueprint, inv, count, 3))
+				g0 = dfs(skip(blueprint, inv, count, 3))
 			}
 			if inv.Δoby < maxoby && inv.Δclay > 0 {
-				wc.Add(1)
-				go dfs(skip(blueprint, inv, count, 2))
+				g1 = dfs(skip(blueprint, inv, count, 2))
 			}
 			if inv.Δclay < maxclay {
-				wc.Add(1)
-				go dfs(skip(blueprint, inv, count, 1))
+				g2 = dfs(skip(blueprint, inv, count, 1))
 			}
 			if inv.Δore < maxore {
-				wc.Add(1)
-				go dfs(skip(blueprint, inv, count, 0))
+				g3 = dfs(skip(blueprint, inv, count, 0))
 			}
+			return max(g0, max(g1, max(g2, g3)))
 		}
-		ch <- inv.geod + inv.Δgeod*(minutes-count)
-		wc.Done()
-		if count == 0 {
-			wc.Wait()
-			close(ch)
-		}
+		return inv.geod + inv.Δgeod*(minutes-count)
 	}
-	wc.Add(1)
-	go dfs(state{0, 0, 0, 0, 1, 0, 0, 0}, 0)
-	for n := range ch {
-		if n > maxn {
-			maxn = n
-		}
-	}
-	return maxn
+	return dfs(state{0, 0, 0, 0, 1, 0, 0, 0}, 0)
 }
 
 // Skip waiting turns and buy the target robot.
