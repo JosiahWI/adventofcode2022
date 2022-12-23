@@ -44,15 +44,15 @@ func main() {
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "parsing: %vn", err)
 		}
-		for i := 0; i < 10; i++ {
-			simulate(elves)
+		i := 1
+		for ; simulate(elves); i++ {
 			rotateOffs()
 		}
-		fmt.Printf("%d\n", getEmpty(elves))
+		fmt.Printf("%d\n", i)
 	}
 }
 
-func simulate(elves map[Coord]bool) {
+func simulate(elves map[Coord]bool) bool {
 	nelves := len(elves)
 	proposals := make(map[Coord]Coord, nelves)
 	counts := make(map[Coord]int, nelves)
@@ -62,12 +62,15 @@ func simulate(elves map[Coord]bool) {
 			counts[to]++
 		}
 	}
+	moved := false
 	for at, to := range proposals {
 		if counts[to] == 1 {
+			moved = true
 			elves[to] = true
 			delete(elves, at)
 		}
 	}
+	return moved
 }
 
 func getProposal(elves map[Coord]bool, at Coord) (Coord, bool) {
@@ -90,24 +93,6 @@ func getProposal(elves map[Coord]bool, at Coord) (Coord, bool) {
 		}
 	}
 	return proposal, needed && found
-}
-
-func getEmpty(elves map[Coord]bool) int {
-	var minx, miny, maxx, maxy int
-	for at, _ := range elves {
-		if at.x < minx {
-			minx = at.x
-		} else if at.x > maxx {
-			maxx = at.x
-		}
-		if at.y < miny {
-			miny = at.y
-		} else if at.y > maxy {
-			maxy = at.y
-		}
-	}
-	area := (maxx + 1 - minx) * (maxy + 1 - miny)
-	return area - len(elves)
 }
 
 func parse(r io.Reader) (map[Coord]bool, error) {
